@@ -29,10 +29,12 @@ import static java.util.Optional.ofNullable;
 public class ResettableInitializer implements ServletContainerInitializer {
     @Override
     public void onStartup(final Set<Class<?>> c, final ServletContext ctx) throws ServletException {
-        final String mapping = getConfig(ctx, "resettable.endpoint", "/reset");
-        final ServletRegistration.Dynamic servlet = ctx.addServlet("ResettableScoped", ResettableEndpoint.class);
-        servlet.setInitParameter("mapping", mapping);
-        servlet.addMapping(mapping);
+        if (Boolean.parseBoolean(getConfig(ctx, "resettable.active", "false"))) {
+            final String mapping = getConfig(ctx, "resettable.endpoint", "/reset");
+            final ServletRegistration.Dynamic servlet = ctx.addServlet("ResettableScoped", ResettableEndpoint.class);
+            servlet.setInitParameter("mapping", mapping);
+            servlet.addMapping(mapping);
+        }
     }
 
     private static String getConfig(final ServletContext ctx, final String key, final String defaultValue) {

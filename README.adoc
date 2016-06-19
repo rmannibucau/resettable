@@ -75,3 +75,15 @@ bm.fireEvent(new ResetRequest() {
     }
 });
 ----
+
+=== Endpoint
+
+Configuration uses system properties and init parameters (in this order).
+
+|===
+|Key|Description|Default
+|resettable.active|Is the endpoint deployed in a servlet 3.x container|false
+|resettable.endpoint|Which endpoint in the context to use|/reset
+|===
+
+Once activated you can hit `/reset` to reset the `@ResettableScoped` beans.
