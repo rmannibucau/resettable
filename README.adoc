@@ -1,0 +1,77 @@
+= @ResettableScoped
+
+Resettable scope is an `@ApplicationScoped` wrapper allowing you to reinitialize beans at runtime.
+
+WARNING: if you rely on `@PreDestroy` on such beans CDI will not handle concurrency for you so you need to ensure
+a bean is not destroyed while it is used. A `ReadWriteLock` is enough for that purpose. Note that Apache DeltaSpike
+provides an interceptor for that.
+
+== Use case
+
+Be able to trigger a bean reloading at runtime. A typical example is for configuration to be able to get new values.
+
+If you use - let use DeltaSpike for the samples - here is what you surely have in your application:
+
+[source,java]
+----
+@ApplicationScoped
+public class MyService {
+    @Inject
+    @ConfigProperty(name = "app.timeout", defaultValue = "10000")
+    private Integer timeout;
+}
+----
+
+To have a auto-reloading of the value - it depends of the `ConfigSource` for DeltaSpike but let's assume it is not cached
+you can use:
+
+[source,java]
+----
+@RequestScoped
+public class MyService {
+    @Inject
+    @ConfigProperty(name = "app.timeout", defaultValue = "10000")
+    private Integer timeout;
+}
+----
+
+But this will re-create `MyService` for each request. If your configuration changes only once a day or even a week this is
+an overhead you likely don't desire. However with `@ApplicationScoped` you will not get new values until you restart.
+
+Here is what tries to solve `@ResettableScoped`.
+
+== Usage
+
+Just replace `@ApplicationScoped` by `@ResettableScoped`:
+
+[source,java]
+----
+@ResettableScoped
+public class MyService {
+    @Inject
+    @ConfigProperty(name = "app.timeout", defaultValue = "10000")
+    private Integer timeout;
+}
+----
+
+=== Request a reloading
+
+To reload the resettable beans just fire an event `ResetRequest`:
+
+[source,java]
+----
+bm.fireEvent(new ResetRequest());
+----
+
+By default it will reset all beans of the scope. If you however have a criteria to reload only few beans
+you can access the Bean<?> and instance before resetting them:
+
+[source,java]
+----
+bm.fireEvent(new ResetRequest() {
+    @Override
+    public boolean shouldReset(final Bean<?> bean, final Object instance) {
+        return bean.getBeanClass() == App1.class && app1.equals(instance);
+    }
+});
+----
